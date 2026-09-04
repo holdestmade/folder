@@ -25,3 +25,8 @@ jobs:
       - uses: hacs/action@main
         with:
           category: integration
+          # `folder` has no entry in home-assistant/brands and this repo ships
+          # no brand assets, so the brands check can never pass. It only gates
+          # inclusion in the HACS default store, which a custom component
+          # overriding a core domain is not eligible for anyway.
+          ignore: brands

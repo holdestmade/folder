@@ -1,14 +1,32 @@
 # Folder (UI configurable)
 
+[![hacs][hacs-badge]][hacs-url]
+
 A custom component that overrides Home Assistant's built-in, YAML-only `folder`
 integration so folders can be added and edited from the UI.
 
+Requires Home Assistant 2024.11 or newer.
+
 ## Installation
 
+### HACS (custom repository)
+
+This integration is not in the HACS default store, so add it as a custom
+repository:
+
+1. In Home Assistant go to **HACS**.
+2. Open the three-dot menu at the top right and choose **Custom repositories**.
+3. Add `https://github.com/holdestmade/folder` with the type **Integration**.
+4. Find **Folder** in the list, click **Download**, then restart Home Assistant.
+
+### Manual
+
 Copy `custom_components/folder` into your Home Assistant `config/custom_components`
-directory and restart Home Assistant. Because the domain is `folder`, this
-component takes precedence over the built-in integration (Home Assistant logs a
-warning that a built-in integration is being overridden — that is expected).
+directory and restart Home Assistant.
+
+Either way, because the domain is `folder`, this component takes precedence over
+the built-in integration — Home Assistant logs a warning that a built-in
+integration is being overridden, which is expected.
 
 ## Configuration
 
@@ -48,3 +66,12 @@ many files cannot push the entity's attributes past the recorder's 16 KiB limit
 Existing YAML configuration is imported automatically on startup and a repair
 issue is raised. Once the entry appears under Devices & services, remove the
 `folder` sensor platform from `configuration.yaml` and restart.
+
+## License
+
+[Apache-2.0](LICENSE). This integration is derived from the `folder` integration
+in [Home Assistant Core][ha-core], which is also licensed under Apache-2.0.
+
+[hacs-badge]: https://img.shields.io/badge/HACS-Custom-41BDF5.svg
+[hacs-url]: https://github.com/hacs/integration
+[ha-core]: https://github.com/home-assistant/core

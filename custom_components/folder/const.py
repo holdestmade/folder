@@ -15,6 +15,11 @@ ATTR_NUMBER_OF_FILES: Final = "number_of_files"
 ATTR_BYTES: Final = "bytes"
 ATTR_FILE_LIST: Final = "file_list"
 
+KEY_SIZE: Final = "size"
+KEY_NUMBER_OF_FILES: Final = "number_of_files"
+
+UNIT_FILES: Final = "files"
+
 DEFAULT_FILTER: Final = "*"
 DEFAULT_SCAN_INTERVAL: Final = 60
 

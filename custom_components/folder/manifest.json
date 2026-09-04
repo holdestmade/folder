@@ -1,7 +1,7 @@
 {
   "domain": "folder",
   "name": "Folder",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "documentation": "https://github.com/holdestmade/folder",
   "issue_tracker": "https://github.com/holdestmade/folder/issues",
   "codeowners": [

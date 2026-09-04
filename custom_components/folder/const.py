@@ -9,6 +9,12 @@ DOMAIN: Final = "folder"
 CONF_FOLDER_PATHS: Final = "folder"
 CONF_FILTER: Final = "filter"
 
+ATTR_PATH: Final = "path"
+ATTR_FILTER: Final = "filter"
+ATTR_NUMBER_OF_FILES: Final = "number_of_files"
+ATTR_BYTES: Final = "bytes"
+ATTR_FILE_LIST: Final = "file_list"
+
 DEFAULT_FILTER: Final = "*"
 DEFAULT_SCAN_INTERVAL: Final = 60
 

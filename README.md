@@ -38,6 +38,11 @@ files, with these attributes:
 
 `path`, `filter`, `number_of_files`, `bytes`, `file_list`
 
+`file_list` is excluded from the recorder database. It is still available in
+templates and automations, but it is not written to history, so a folder with
+many files cannot push the entity's attributes past the recorder's 16 KiB limit
+(which would otherwise stop *all* of the entity's attributes being recorded).
+
 ## Migrating from YAML
 
 Existing YAML configuration is imported automatically on startup and a repair

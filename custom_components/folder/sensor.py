@@ -22,7 +22,17 @@ from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import FolderConfigEntry
-from .const import CONF_FILTER, CONF_FOLDER_PATHS, DEFAULT_FILTER, DOMAIN
+from .const import (
+    ATTR_BYTES,
+    ATTR_FILE_LIST,
+    ATTR_FILTER,
+    ATTR_NUMBER_OF_FILES,
+    ATTR_PATH,
+    CONF_FILTER,
+    CONF_FOLDER_PATHS,
+    DEFAULT_FILTER,
+    DOMAIN,
+)
 from .coordinator import FolderCoordinator
 
 PLATFORM_SCHEMA = SENSOR_PLATFORM_SCHEMA.extend(
@@ -72,6 +82,11 @@ async def async_setup_entry(
 class FolderSensor(CoordinatorEntity[FolderCoordinator], SensorEntity):
     """Representation of a folder."""
 
+    # The file list can grow past the recorder's 16 KiB attribute limit, which
+    # makes it drop the whole attribute set for this entity. Keep it in the
+    # state machine but out of the database.
+    _unrecorded_attributes = frozenset({ATTR_FILE_LIST})
+
     _attr_device_class = SensorDeviceClass.DATA_SIZE
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = UnitOfInformation.MEGABYTES
@@ -102,9 +117,9 @@ class FolderSensor(CoordinatorEntity[FolderCoordinator], SensorEntity):
         """Return the state attributes."""
         data = self.coordinator.data
         return {
-            "path": os.path.join(self.coordinator.path, ""),
-            "filter": self.coordinator.filter_term,
-            "number_of_files": data.number_of_files,
-            "bytes": data.size,
-            "file_list": data.files,
+            ATTR_PATH: os.path.join(self.coordinator.path, ""),
+            ATTR_FILTER: self.coordinator.filter_term,
+            ATTR_NUMBER_OF_FILES: data.number_of_files,
+            ATTR_BYTES: data.size,
+            ATTR_FILE_LIST: data.files,
         }

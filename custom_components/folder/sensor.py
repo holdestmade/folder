@@ -1,8 +1,7 @@
 """Sensor for monitoring the contents of a folder."""
 
-from datetime import timedelta
-import glob
-import logging
+from __future__ import annotations
+
 import os
 
 import voluptuous as vol
@@ -11,20 +10,20 @@ from homeassistant.components.sensor import (
     PLATFORM_SCHEMA as SENSOR_PLATFORM_SCHEMA,
     SensorDeviceClass,
     SensorEntity,
+    SensorStateClass,
 )
+from homeassistant.config_entries import SOURCE_IMPORT
 from homeassistant.const import UnitOfInformation
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import config_validation as cv, issue_registry as ir
+from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-_LOGGER = logging.getLogger(__name__)
-
-CONF_FOLDER_PATHS = "folder"
-CONF_FILTER = "filter"
-DEFAULT_FILTER = "*"
-
-SCAN_INTERVAL = timedelta(minutes=1)
+from . import FolderConfigEntry
+from .const import CONF_FILTER, CONF_FOLDER_PATHS, DEFAULT_FILTER, DOMAIN
+from .coordinator import FolderCoordinator
 
 PLATFORM_SCHEMA = SENSOR_PLATFORM_SCHEMA.extend(
     {
@@ -34,59 +33,78 @@ PLATFORM_SCHEMA = SENSOR_PLATFORM_SCHEMA.extend(
 )
 
 
-def get_files_list(folder_path: str, filter_term: str) -> list[str]:
-    """Return the list of files, applying filter."""
-    query = folder_path + filter_term
-    return glob.glob(query)
-
-
-def get_size(files_list: list[str]) -> int:
-    """Return the sum of the size in bytes of files in the list."""
-    size_list = [os.stat(f).st_size for f in files_list if os.path.isfile(f)]
-    return sum(size_list)
-
-
-def setup_platform(
+async def async_setup_platform(
     hass: HomeAssistant,
     config: ConfigType,
-    add_entities: AddEntitiesCallback,
+    async_add_entities: AddEntitiesCallback,
     discovery_info: DiscoveryInfoType | None = None,
 ) -> None:
-    """Set up the folder sensor."""
-    path: str = config[CONF_FOLDER_PATHS]
+    """Import a YAML configured folder sensor into a config entry."""
+    ir.async_create_issue(
+        hass,
+        DOMAIN,
+        "deprecated_yaml",
+        breaks_in_ha_version=None,
+        is_fixable=False,
+        issue_domain=DOMAIN,
+        severity=ir.IssueSeverity.WARNING,
+        translation_key="deprecated_yaml",
+        translation_placeholders={"path": config[CONF_FOLDER_PATHS]},
+    )
+    hass.async_create_task(
+        hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": SOURCE_IMPORT},
+            data=dict(config),
+        )
+    )
 
-    if not hass.config.is_allowed_path(path):
-        _LOGGER.error("Folder %s is not valid or allowed", path)
-    else:
-        folder = Folder(path, config[CONF_FILTER])
-        add_entities([folder], True)
+
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: FolderConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up the folder sensor from a config entry."""
+    async_add_entities([FolderSensor(entry.runtime_data, entry)])
 
 
-class Folder(SensorEntity):
+class FolderSensor(CoordinatorEntity[FolderCoordinator], SensorEntity):
     """Representation of a folder."""
 
     _attr_device_class = SensorDeviceClass.DATA_SIZE
-    _attr_icon = "mdi:folder"
+    _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = UnitOfInformation.MEGABYTES
+    _attr_suggested_display_precision = 2
+    _attr_icon = "mdi:folder"
+    _attr_has_entity_name = True
+    _attr_name = None
 
-    def __init__(self, folder_path: str, filter_term: str) -> None:
+    def __init__(
+        self, coordinator: FolderCoordinator, entry: FolderConfigEntry
+    ) -> None:
         """Initialize the data object."""
-        folder_path = os.path.join(folder_path, "")  # If no trailing / add it
-        self._folder_path = folder_path  # Need to check its a valid path
-        self._filter_term = filter_term
-        self._attr_name = os.path.split(os.path.split(folder_path)[0])[1]
+        super().__init__(coordinator)
+        self._attr_unique_id = entry.entry_id
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry.entry_id)},
+            entry_type=DeviceEntryType.SERVICE,
+            name=entry.title or os.path.basename(coordinator.path),
+        )
 
-    def update(self) -> None:
-        """Update the sensor."""
-        files_list = get_files_list(self._folder_path, self._filter_term)
-        number_of_files = len(files_list)
-        size = get_size(files_list)
+    @property
+    def native_value(self) -> float:
+        """Return the total size of the matched files in megabytes."""
+        return round(self.coordinator.data.size / 1e6, 2)
 
-        self._attr_native_value = round(size / 1e6, 2)
-        self._attr_extra_state_attributes = {
-            "path": self._folder_path,
-            "filter": self._filter_term,
-            "number_of_files": number_of_files,
-            "bytes": size,
-            "file_list": files_list,
+    @property
+    def extra_state_attributes(self) -> dict[str, object]:
+        """Return the state attributes."""
+        data = self.coordinator.data
+        return {
+            "path": os.path.join(self.coordinator.path, ""),
+            "filter": self.coordinator.filter_term,
+            "number_of_files": data.number_of_files,
+            "bytes": data.size,
+            "file_list": data.files,
         }

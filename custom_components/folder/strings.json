@@ -1,0 +1,67 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add a folder",
+        "description": "Monitor the size and contents of a folder. The folder must be listed under `allowlist_external_dirs` in your configuration.yaml.",
+        "data": {
+          "folder": "Folder path",
+          "filter": "File filter",
+          "scan_interval": "Update interval"
+        },
+        "data_description": {
+          "folder": "Full path to the folder to monitor, for example /media/downloads.",
+          "filter": "Glob pattern used to select files, for example *.mp4. Use * for all files.",
+          "scan_interval": "How often the folder is scanned, in seconds."
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure folder",
+        "description": "Change the folder being monitored and how it is scanned.",
+        "data": {
+          "folder": "Folder path",
+          "filter": "File filter",
+          "scan_interval": "Update interval"
+        },
+        "data_description": {
+          "folder": "Full path to the folder to monitor, for example /media/downloads.",
+          "filter": "Glob pattern used to select files, for example *.mp4. Use * for all files.",
+          "scan_interval": "How often the folder is scanned, in seconds."
+        }
+      }
+    },
+    "error": {
+      "invalid_path": "Please enter a folder path.",
+      "not_dir": "That path does not exist or is not a folder.",
+      "not_allowed": "That folder is not allowed. Add it to `allowlist_external_dirs` in configuration.yaml and restart Home Assistant."
+    },
+    "abort": {
+      "already_configured": "This folder is already configured.",
+      "reconfigure_successful": "Folder updated successfully.",
+      "invalid_path": "The imported configuration has no folder path.",
+      "not_dir": "The imported folder does not exist or is not a folder.",
+      "not_allowed": "The imported folder is not in `allowlist_external_dirs`."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Folder options",
+        "data": {
+          "filter": "File filter",
+          "scan_interval": "Update interval"
+        },
+        "data_description": {
+          "filter": "Glob pattern used to select files, for example *.mp4. Use * for all files.",
+          "scan_interval": "How often the folder is scanned, in seconds."
+        }
+      }
+    }
+  },
+  "issues": {
+    "deprecated_yaml": {
+      "title": "The folder YAML configuration is deprecated",
+      "description": "Configuring folder sensors in configuration.yaml is deprecated. The folder `{path}` has been imported into the UI automatically. Remove the `folder` sensor platform from your configuration.yaml and restart Home Assistant to fix this issue."
+    }
+  }
+}

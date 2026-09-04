@@ -49,10 +49,18 @@ Then go to **Settings → Devices & services → Add integration → Folder** an
 Add the integration once per folder. Use **Configure** on an entry to change the
 filter or the update interval, and **Reconfigure** to change the folder path.
 
-## Entity
+## Entities
 
-Each entry creates one sensor whose state is the total size in MB of the matched
-files, with these attributes:
+Each entry creates a device named after the folder, with two sensors:
+
+| Entity | State |
+| --- | --- |
+| `sensor.<folder>` | Total size in MB of the matched files |
+| `sensor.<folder>_number_of_files` | Count of matched files |
+
+Both have a `measurement` state class, so both get long-term statistics.
+
+The size sensor also carries these attributes, unchanged from the YAML version:
 
 `path`, `filter`, `number_of_files`, `bytes`, `file_list`
 

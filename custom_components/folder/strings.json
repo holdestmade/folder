@@ -63,5 +63,12 @@
       "title": "The folder YAML configuration is deprecated",
       "description": "Configuring folder sensors in configuration.yaml is deprecated. The folder `{path}` has been imported into the UI automatically. Remove the `folder` sensor platform from your configuration.yaml and restart Home Assistant to fix this issue."
     }
+  },
+  "entity": {
+    "sensor": {
+      "number_of_files": {
+        "name": "Number of files"
+      }
+    }
   }
 }

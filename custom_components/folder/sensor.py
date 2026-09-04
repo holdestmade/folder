@@ -1,7 +1,9 @@
-"""Sensor for monitoring the contents of a folder."""
+"""Sensors for monitoring the contents of a folder."""
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from dataclasses import dataclass
 import os
 
 import voluptuous as vol
@@ -10,6 +12,7 @@ from homeassistant.components.sensor import (
     PLATFORM_SCHEMA as SENSOR_PLATFORM_SCHEMA,
     SensorDeviceClass,
     SensorEntity,
+    SensorEntityDescription,
     SensorStateClass,
 )
 from homeassistant.config_entries import SOURCE_IMPORT
@@ -32,14 +35,48 @@ from .const import (
     CONF_FOLDER_PATHS,
     DEFAULT_FILTER,
     DOMAIN,
+    KEY_NUMBER_OF_FILES,
+    KEY_SIZE,
+    UNIT_FILES,
 )
-from .coordinator import FolderCoordinator
+from .coordinator import FolderCoordinator, FolderData
 
 PLATFORM_SCHEMA = SENSOR_PLATFORM_SCHEMA.extend(
     {
         vol.Required(CONF_FOLDER_PATHS): cv.isdir,
         vol.Optional(CONF_FILTER, default=DEFAULT_FILTER): cv.string,
     }
+)
+
+
+@dataclass(frozen=True, kw_only=True)
+class FolderSensorEntityDescription(SensorEntityDescription):
+    """Describes a folder sensor."""
+
+    value_fn: Callable[[FolderData], float | int]
+
+
+SENSOR_TYPES: tuple[FolderSensorEntityDescription, ...] = (
+    FolderSensorEntityDescription(
+        key=KEY_SIZE,
+        # Unnamed, so it inherits the device (folder) name and keeps the
+        # entity_id the YAML platform used.
+        name=None,
+        icon="mdi:folder",
+        device_class=SensorDeviceClass.DATA_SIZE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfInformation.MEGABYTES,
+        suggested_display_precision=2,
+        value_fn=lambda data: round(data.size / 1e6, 2),
+    ),
+    FolderSensorEntityDescription(
+        key=KEY_NUMBER_OF_FILES,
+        translation_key=KEY_NUMBER_OF_FILES,
+        icon="mdi:file-multiple",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UNIT_FILES,
+        value_fn=lambda data: data.number_of_files,
+    ),
 )
 
 
@@ -75,8 +112,11 @@ async def async_setup_entry(
     entry: FolderConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up the folder sensor from a config entry."""
-    async_add_entities([FolderSensor(entry.runtime_data, entry)])
+    """Set up the folder sensors from a config entry."""
+    coordinator = entry.runtime_data
+    async_add_entities(
+        FolderSensor(coordinator, entry, description) for description in SENSOR_TYPES
+    )
 
 
 class FolderSensor(CoordinatorEntity[FolderCoordinator], SensorEntity):
@@ -87,20 +127,25 @@ class FolderSensor(CoordinatorEntity[FolderCoordinator], SensorEntity):
     # state machine but out of the database.
     _unrecorded_attributes = frozenset({ATTR_FILE_LIST})
 
-    _attr_device_class = SensorDeviceClass.DATA_SIZE
-    _attr_state_class = SensorStateClass.MEASUREMENT
-    _attr_native_unit_of_measurement = UnitOfInformation.MEGABYTES
-    _attr_suggested_display_precision = 2
-    _attr_icon = "mdi:folder"
     _attr_has_entity_name = True
-    _attr_name = None
+    entity_description: FolderSensorEntityDescription
 
     def __init__(
-        self, coordinator: FolderCoordinator, entry: FolderConfigEntry
+        self,
+        coordinator: FolderCoordinator,
+        entry: FolderConfigEntry,
+        description: FolderSensorEntityDescription,
     ) -> None:
         """Initialize the data object."""
         super().__init__(coordinator)
-        self._attr_unique_id = entry.entry_id
+        self.entity_description = description
+        # The size sensor predates the other sensors and keeps the bare entry
+        # id, so existing entities and their history survive an upgrade.
+        self._attr_unique_id = (
+            entry.entry_id
+            if description.key == KEY_SIZE
+            else f"{entry.entry_id}_{description.key}"
+        )
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)},
             entry_type=DeviceEntryType.SERVICE,
@@ -108,13 +153,16 @@ class FolderSensor(CoordinatorEntity[FolderCoordinator], SensorEntity):
         )
 
     @property
-    def native_value(self) -> float:
-        """Return the total size of the matched files in megabytes."""
-        return round(self.coordinator.data.size / 1e6, 2)
+    def native_value(self) -> float | int:
+        """Return the value of the sensor."""
+        return self.entity_description.value_fn(self.coordinator.data)
 
     @property
-    def extra_state_attributes(self) -> dict[str, object]:
-        """Return the state attributes."""
+    def extra_state_attributes(self) -> dict[str, object] | None:
+        """Return the state attributes of the size sensor."""
+        if self.entity_description.key != KEY_SIZE:
+            return None
+
         data = self.coordinator.data
         return {
             ATTR_PATH: os.path.join(self.coordinator.path, ""),

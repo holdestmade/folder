@@ -17,6 +17,7 @@ from homeassistant.config_entries import (
 from homeassistant.const import CONF_SCAN_INTERVAL
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.selector import (
+    BooleanSelector,
     NumberSelector,
     NumberSelectorConfig,
     NumberSelectorMode,
@@ -26,7 +27,9 @@ from homeassistant.helpers.selector import (
 from .const import (
     CONF_FILTER,
     CONF_FOLDER_PATHS,
+    CONF_RECURSIVE,
     DEFAULT_FILTER,
+    DEFAULT_RECURSIVE,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     MAX_SCAN_INTERVAL,
@@ -73,6 +76,10 @@ def _user_schema(defaults: dict[str, Any]) -> vol.Schema:
                 CONF_FILTER, default=defaults.get(CONF_FILTER, DEFAULT_FILTER)
             ): TextSelector(),
             vol.Optional(
+                CONF_RECURSIVE,
+                default=defaults.get(CONF_RECURSIVE, DEFAULT_RECURSIVE),
+            ): BooleanSelector(),
+            vol.Optional(
                 CONF_SCAN_INTERVAL,
                 default=defaults.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
             ): SCAN_INTERVAL_SELECTOR,
@@ -103,6 +110,9 @@ class FolderConfigFlow(ConfigFlow, domain=DOMAIN):
                     data={CONF_FOLDER_PATHS: path},
                     options={
                         CONF_FILTER: user_input.get(CONF_FILTER, DEFAULT_FILTER),
+                        CONF_RECURSIVE: bool(
+                            user_input.get(CONF_RECURSIVE, DEFAULT_RECURSIVE)
+                        ),
                         CONF_SCAN_INTERVAL: int(
                             user_input.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
                         ),
@@ -138,6 +148,9 @@ class FolderConfigFlow(ConfigFlow, domain=DOMAIN):
                     data={CONF_FOLDER_PATHS: path},
                     options={
                         CONF_FILTER: user_input.get(CONF_FILTER, DEFAULT_FILTER),
+                        CONF_RECURSIVE: bool(
+                            user_input.get(CONF_RECURSIVE, DEFAULT_RECURSIVE)
+                        ),
                         CONF_SCAN_INTERVAL: int(
                             user_input.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
                         ),
@@ -147,6 +160,7 @@ class FolderConfigFlow(ConfigFlow, domain=DOMAIN):
         suggested = {
             CONF_FOLDER_PATHS: entry.data[CONF_FOLDER_PATHS],
             CONF_FILTER: entry.options.get(CONF_FILTER, DEFAULT_FILTER),
+            CONF_RECURSIVE: entry.options.get(CONF_RECURSIVE, DEFAULT_RECURSIVE),
             CONF_SCAN_INTERVAL: entry.options.get(
                 CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
             ),
@@ -175,6 +189,7 @@ class FolderConfigFlow(ConfigFlow, domain=DOMAIN):
             data={CONF_FOLDER_PATHS: path},
             options={
                 CONF_FILTER: import_data.get(CONF_FILTER, DEFAULT_FILTER),
+                CONF_RECURSIVE: DEFAULT_RECURSIVE,
                 CONF_SCAN_INTERVAL: DEFAULT_SCAN_INTERVAL,
             },
         )
@@ -197,6 +212,9 @@ class FolderOptionsFlow(OptionsFlow):
             return self.async_create_entry(
                 data={
                     CONF_FILTER: user_input.get(CONF_FILTER, DEFAULT_FILTER),
+                    CONF_RECURSIVE: bool(
+                        user_input.get(CONF_RECURSIVE, DEFAULT_RECURSIVE)
+                    ),
                     CONF_SCAN_INTERVAL: int(
                         user_input.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
                     ),
@@ -209,6 +227,10 @@ class FolderOptionsFlow(OptionsFlow):
                 vol.Optional(
                     CONF_FILTER, default=options.get(CONF_FILTER, DEFAULT_FILTER)
                 ): TextSelector(),
+                vol.Optional(
+                    CONF_RECURSIVE,
+                    default=options.get(CONF_RECURSIVE, DEFAULT_RECURSIVE),
+                ): BooleanSelector(),
                 vol.Optional(
                     CONF_SCAN_INTERVAL,
                     default=options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),

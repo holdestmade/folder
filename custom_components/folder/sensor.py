@@ -31,6 +31,7 @@ from .const import (
     ATTR_FILTER,
     ATTR_NUMBER_OF_FILES,
     ATTR_PATH,
+    ATTR_RECURSIVE,
     CONF_FILTER,
     CONF_FOLDER_PATHS,
     DEFAULT_FILTER,
@@ -167,6 +168,7 @@ class FolderSensor(CoordinatorEntity[FolderCoordinator], SensorEntity):
         return {
             ATTR_PATH: os.path.join(self.coordinator.path, ""),
             ATTR_FILTER: self.coordinator.filter_term,
+            ATTR_RECURSIVE: self.coordinator.recursive,
             ATTR_NUMBER_OF_FILES: data.number_of_files,
             ATTR_BYTES: data.size,
             ATTR_FILE_LIST: data.files,

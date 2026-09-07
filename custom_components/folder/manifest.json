@@ -9,5 +9,5 @@
   "integration_type": "service",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/holdestmade/folder/issues",
-  "version": "1.2.1"
+  "version": "1.2.2"
 }

@@ -44,10 +44,27 @@ Then go to **Settings → Devices & services → Add integration → Folder** an
 | --- | --- | --- |
 | Folder path | Full path of the folder to monitor | — |
 | File filter | Glob pattern selecting files, e.g. `*.mp4` | `*` |
+| Include subfolders | Also count files in every subfolder | off |
 | Update interval | Seconds between folder scans | `60` |
 
 Add the integration once per folder. Use **Configure** on an entry to change the
-filter or the update interval, and **Reconfigure** to change the folder path.
+filter, the subfolder setting or the update interval, and **Reconfigure** to
+change the folder path.
+
+### Including subfolders
+
+With **Include subfolders** off (the default) only files directly inside the
+configured folder are counted. With it on, the whole tree below the folder is
+walked and the filter is matched against each file name, so `*.mp4` on
+`/media` counts `/media/films/a.mp4` as well as `/media/b.mp4`.
+
+Two things are deliberately skipped in both modes:
+
+- **Symlinked folders are not followed.** They can point outside the configured
+  folder, and a symlink loop would be walked until the path length limit stops
+  it.
+- **Hidden files and folders** (names starting with `.`) are not counted, so a
+  `.git` or `.stfolder` directory does not inflate the total.
 
 ## Entities
 
@@ -60,9 +77,9 @@ Each entry creates a device named after the folder, with two sensors:
 
 Both have a `measurement` state class, so both get long-term statistics.
 
-The size sensor also carries these attributes, unchanged from the YAML version:
+The size sensor also carries these attributes:
 
-`path`, `filter`, `number_of_files`, `bytes`, `file_list`
+`path`, `filter`, `recursive`, `number_of_files`, `bytes`, `file_list`
 
 `file_list` is excluded from the recorder database. It is still available in
 templates and automations, but it is not written to history, so a folder with
@@ -74,6 +91,14 @@ many files cannot push the entity's attributes past the recorder's 16 KiB limit
 Existing YAML configuration is imported automatically on startup and a repair
 issue is raised. Once the entry appears under Devices & services, remove the
 `folder` sensor platform from `configuration.yaml` and restart.
+
+## Counting behaviour
+
+Only real files are counted. Earlier versions matched the filter with `glob`
+and counted whatever it returned, so a bare `*` filter also counted every
+subdirectory as a file — the `bytes` attribute has always excluded them. If you
+used the default filter, the file count may now be lower than before by the
+number of subdirectories in the folder; nothing else changed.
 
 ## License
 

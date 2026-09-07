@@ -7,11 +7,13 @@
         "data": {
           "folder": "Folder path",
           "filter": "File filter",
+          "recursive": "Include subfolders",
           "scan_interval": "Update interval"
         },
         "data_description": {
           "folder": "Full path to the folder to monitor, for example /media/downloads.",
           "filter": "Glob pattern used to select files, for example *.mp4. Use * for all files.",
+          "recursive": "Also count files in every subfolder of the configured folder. Symlinked folders are not followed.",
           "scan_interval": "How often the folder is scanned, in seconds."
         }
       },
@@ -21,11 +23,13 @@
         "data": {
           "folder": "Folder path",
           "filter": "File filter",
+          "recursive": "Include subfolders",
           "scan_interval": "Update interval"
         },
         "data_description": {
           "folder": "Full path to the folder to monitor, for example /media/downloads.",
           "filter": "Glob pattern used to select files, for example *.mp4. Use * for all files.",
+          "recursive": "Also count files in every subfolder of the configured folder. Symlinked folders are not followed.",
           "scan_interval": "How often the folder is scanned, in seconds."
         }
       }
@@ -49,10 +53,12 @@
         "title": "Folder options",
         "data": {
           "filter": "File filter",
+          "recursive": "Include subfolders",
           "scan_interval": "Update interval"
         },
         "data_description": {
           "filter": "Glob pattern used to select files, for example *.mp4. Use * for all files.",
+          "recursive": "Also count files in every subfolder of the configured folder. Symlinked folders are not followed.",
           "scan_interval": "How often the folder is scanned, in seconds."
         }
       }

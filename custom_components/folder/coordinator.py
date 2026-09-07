@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import timedelta
+import fnmatch
 import glob
 import logging
 import os
@@ -17,7 +18,9 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from .const import (
     CONF_FILTER,
     CONF_FOLDER_PATHS,
+    CONF_RECURSIVE,
     DEFAULT_FILTER,
+    DEFAULT_RECURSIVE,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
 )
@@ -34,16 +37,49 @@ class FolderData:
     size: int
 
 
-def get_files_list(folder_path: str, filter_term: str) -> list[str]:
+def walk_files(folder_path: str, filter_term: str) -> list[str]:
+    """Return names matching filter_term in folder_path and its subfolders.
+
+    Symlinked directories are deliberately not followed. glob()'s "**" does
+    follow them, which walks a symlink cycle until the path length limit stops
+    it and reports files outside the configured folder.
+    """
+    files_list: list[str] = []
+    for root, dirs, files in os.walk(folder_path):
+        # glob() never matches a leading dot, so skip hidden files and do not
+        # descend into hidden directories, keeping both modes consistent.
+        dirs[:] = [d for d in dirs if not d.startswith(".")]
+        files_list.extend(
+            os.path.join(root, name)
+            for name in files
+            if not name.startswith(".") and fnmatch.fnmatch(name, filter_term)
+        )
+    return files_list
+
+
+def get_files_list(
+    folder_path: str, filter_term: str, recursive: bool = False
+) -> list[str]:
     """Return the list of files, applying filter."""
-    query = os.path.join(folder_path, filter_term)
-    return glob.glob(query)
+    if recursive:
+        matches = walk_files(folder_path, filter_term)
+    else:
+        matches = glob.glob(os.path.join(folder_path, filter_term))
+    # A bare "*" filter also matches subdirectories; count only real files, so
+    # number_of_files agrees with the bytes attribute about what a file is.
+    return [path for path in matches if os.path.isfile(path)]
 
 
 def get_size(files_list: list[str]) -> int:
     """Return the sum of the size in bytes of files in the list."""
-    size_list = [os.stat(f).st_size for f in files_list if os.path.isfile(f)]
-    return sum(size_list)
+    size = 0
+    for path in files_list:
+        try:
+            size += os.stat(path).st_size
+        except OSError:
+            # The file went away between listing and stat-ing it.
+            continue
+    return size
 
 
 class FolderCoordinator(DataUpdateCoordinator[FolderData]):
@@ -56,6 +92,11 @@ class FolderCoordinator(DataUpdateCoordinator[FolderData]):
         self.path: str = entry.data[CONF_FOLDER_PATHS]
         self.filter_term: str = entry.options.get(
             CONF_FILTER, entry.data.get(CONF_FILTER, DEFAULT_FILTER)
+        )
+        self.recursive: bool = bool(
+            entry.options.get(
+                CONF_RECURSIVE, entry.data.get(CONF_RECURSIVE, DEFAULT_RECURSIVE)
+            )
         )
         scan_interval: int = int(
             entry.options.get(
@@ -88,7 +129,7 @@ class FolderCoordinator(DataUpdateCoordinator[FolderData]):
             raise UpdateFailed(f"Folder {self.path} is not a directory")
 
         try:
-            files = get_files_list(self.path, self.filter_term)
+            files = get_files_list(self.path, self.filter_term, self.recursive)
             size = get_size(files)
         except OSError as err:
             raise UpdateFailed(f"Error reading folder {self.path}: {err}") from err

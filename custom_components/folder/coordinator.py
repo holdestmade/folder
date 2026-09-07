@@ -23,6 +23,7 @@ from .const import (
     DEFAULT_RECURSIVE,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
+    FILTER_SEPARATOR,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -37,8 +38,19 @@ class FolderData:
     size: int
 
 
-def walk_files(folder_path: str, filter_term: str) -> list[str]:
-    """Return names matching filter_term in folder_path and its subfolders.
+def parse_filter(filter_term: str) -> list[str]:
+    """Split a filter into its patterns.
+
+    The filter is a comma separated list, so "*.mkv, *.mp4" selects both
+    extensions. A filter with no comma is a single pattern and behaves exactly
+    as it always has.
+    """
+    patterns = [pattern.strip() for pattern in filter_term.split(FILTER_SEPARATOR)]
+    return [pattern for pattern in patterns if pattern] or [DEFAULT_FILTER]
+
+
+def walk_files(folder_path: str, patterns: list[str]) -> list[str]:
+    """Return names matching any pattern in folder_path and its subfolders.
 
     Symlinked directories are deliberately not followed. glob()'s "**" does
     follow them, which walks a symlink cycle until the path length limit stops
@@ -52,7 +64,8 @@ def walk_files(folder_path: str, filter_term: str) -> list[str]:
         files_list.extend(
             os.path.join(root, name)
             for name in files
-            if not name.startswith(".") and fnmatch.fnmatch(name, filter_term)
+            if not name.startswith(".")
+            and any(fnmatch.fnmatch(name, pattern) for pattern in patterns)
         )
     return files_list
 
@@ -61,13 +74,20 @@ def get_files_list(
     folder_path: str, filter_term: str, recursive: bool = False
 ) -> list[str]:
     """Return the list of files, applying filter."""
+    patterns = parse_filter(filter_term)
     if recursive:
-        matches = walk_files(folder_path, filter_term)
+        matches = walk_files(folder_path, patterns)
     else:
-        matches = glob.glob(os.path.join(folder_path, filter_term))
-    # A bare "*" filter also matches subdirectories; count only real files, so
-    # number_of_files agrees with the bytes attribute about what a file is.
-    return [path for path in matches if os.path.isfile(path)]
+        matches = [
+            path
+            for pattern in patterns
+            for path in glob.glob(os.path.join(folder_path, pattern))
+        ]
+    # Overlapping patterns can match the same file twice, so keep the first
+    # occurrence of each. A bare "*" filter also matches subdirectories; count
+    # only real files, so number_of_files agrees with the bytes attribute about
+    # what a file is.
+    return [path for path in dict.fromkeys(matches) if os.path.isfile(path)]
 
 
 def get_size(files_list: list[str]) -> int:

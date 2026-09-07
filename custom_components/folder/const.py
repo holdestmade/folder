@@ -23,6 +23,7 @@ KEY_NUMBER_OF_FILES: Final = "number_of_files"
 UNIT_FILES: Final = "files"
 
 DEFAULT_FILTER: Final = "*"
+FILTER_SEPARATOR: Final = ","
 DEFAULT_RECURSIVE: Final = False
 DEFAULT_SCAN_INTERVAL: Final = 60
 

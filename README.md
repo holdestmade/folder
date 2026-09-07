@@ -63,9 +63,10 @@ it matches any of them:
 | `*.mkv, *.mp4, *.avi` | several extensions |
 
 Listing extensions is the way to keep sidecar files such as `Thumbs.db` or
-`desktop.ini` out of the total when you cannot delete them. Matching is case
-sensitive, so add `*.MKV` as another pattern if your files are mixed case. A
-file matching more than one pattern is still only counted once.
+`desktop.ini` out of the total when you cannot delete them.
+
+Matching ignores case, so `*.mkv` also counts `.MKV` and `.Mkv`. A file
+matching more than one pattern is still only counted once.
 
 ### Including subfolders
 

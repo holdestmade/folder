@@ -12,7 +12,7 @@
         },
         "data_description": {
           "folder": "Full path to the folder to monitor, for example /media/downloads.",
-          "filter": "Glob patterns selecting files, comma separated for more than one, for example *.mkv, *.mp4. Use * for all files.",
+          "filter": "Glob patterns selecting files, comma separated for more than one, for example *.mkv, *.mp4. Case is ignored. Use * for all files.",
           "recursive": "Also count files in every subfolder of the configured folder. Symlinked folders are not followed.",
           "scan_interval": "How often the folder is scanned, in seconds."
         }
@@ -28,7 +28,7 @@
         },
         "data_description": {
           "folder": "Full path to the folder to monitor, for example /media/downloads.",
-          "filter": "Glob patterns selecting files, comma separated for more than one, for example *.mkv, *.mp4. Use * for all files.",
+          "filter": "Glob patterns selecting files, comma separated for more than one, for example *.mkv, *.mp4. Case is ignored. Use * for all files.",
           "recursive": "Also count files in every subfolder of the configured folder. Symlinked folders are not followed.",
           "scan_interval": "How often the folder is scanned, in seconds."
         }
@@ -57,7 +57,7 @@
           "scan_interval": "Update interval"
         },
         "data_description": {
-          "filter": "Glob patterns selecting files, comma separated for more than one, for example *.mkv, *.mp4. Use * for all files.",
+          "filter": "Glob patterns selecting files, comma separated for more than one, for example *.mkv, *.mp4. Case is ignored. Use * for all files.",
           "recursive": "Also count files in every subfolder of the configured folder. Symlinked folders are not followed.",
           "scan_interval": "How often the folder is scanned, in seconds."
         }

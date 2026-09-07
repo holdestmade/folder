@@ -8,6 +8,7 @@ import fnmatch
 import glob
 import logging
 import os
+import re
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_SCAN_INTERVAL
@@ -49,6 +50,34 @@ def parse_filter(filter_term: str) -> list[str]:
     return [pattern for pattern in patterns if pattern] or [DEFAULT_FILTER]
 
 
+def any_case(pattern: str) -> str:
+    """Expand the letters in a glob pattern so it matches either case.
+
+    glob() has no case insensitive mode, so "*.mkv" becomes "*.[mM][kK][vV]".
+    Characters inside a [...] class are left alone rather than risk corrupting
+    the class.
+    """
+    expanded: list[str] = []
+    in_class = False
+    for char in pattern:
+        if char == "[":
+            in_class = True
+        elif char == "]":
+            in_class = False
+        elif not in_class and char.isalpha():
+            lower, upper = char.lower(), char.upper()
+            if lower != upper and len(lower) == len(upper) == 1:
+                expanded.append(f"[{lower}{upper}]")
+                continue
+        expanded.append(char)
+    return "".join(expanded)
+
+
+def compile_patterns(patterns: list[str]) -> list[re.Pattern[str]]:
+    """Compile filter patterns into case insensitive matchers for file names."""
+    return [re.compile(fnmatch.translate(pattern), re.IGNORECASE) for pattern in patterns]
+
+
 def walk_files(folder_path: str, patterns: list[str]) -> list[str]:
     """Return names matching any pattern in folder_path and its subfolders.
 
@@ -56,6 +85,7 @@ def walk_files(folder_path: str, patterns: list[str]) -> list[str]:
     follow them, which walks a symlink cycle until the path length limit stops
     it and reports files outside the configured folder.
     """
+    matchers = compile_patterns(patterns)
     files_list: list[str] = []
     for root, dirs, files in os.walk(folder_path):
         # glob() never matches a leading dot, so skip hidden files and do not
@@ -65,7 +95,7 @@ def walk_files(folder_path: str, patterns: list[str]) -> list[str]:
             os.path.join(root, name)
             for name in files
             if not name.startswith(".")
-            and any(fnmatch.fnmatch(name, pattern) for pattern in patterns)
+            and any(matcher.match(name) for matcher in matchers)
         )
     return files_list
 
@@ -78,10 +108,13 @@ def get_files_list(
     if recursive:
         matches = walk_files(folder_path, patterns)
     else:
+        # glob.escape keeps brackets in the folder name, as in "TV [4K]", from
+        # being read as part of the pattern.
+        root = glob.escape(folder_path)
         matches = [
             path
             for pattern in patterns
-            for path in glob.glob(os.path.join(folder_path, pattern))
+            for path in glob.glob(os.path.join(root, any_case(pattern)))
         ]
     # Overlapping patterns can match the same file twice, so keep the first
     # occurrence of each. A bare "*" filter also matches subdirectories; count

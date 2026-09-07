@@ -43,13 +43,29 @@ Then go to **Settings → Devices & services → Add integration → Folder** an
 | Field | Description | Default |
 | --- | --- | --- |
 | Folder path | Full path of the folder to monitor | — |
-| File filter | Glob pattern selecting files, e.g. `*.mp4` | `*` |
+| File filter | Glob patterns selecting files, comma separated, e.g. `*.mkv, *.mp4` | `*` |
 | Include subfolders | Also count files in every subfolder | off |
 | Update interval | Seconds between folder scans | `60` |
 
 Add the integration once per folder. Use **Configure** on an entry to change the
 filter, the subfolder setting or the update interval, and **Reconfigure** to
 change the folder path.
+
+### The file filter
+
+The filter is a comma separated list of glob patterns, and a file is counted if
+it matches any of them:
+
+| Filter | Counts |
+| --- | --- |
+| `*` | everything (the default) |
+| `*.mkv` | one extension |
+| `*.mkv, *.mp4, *.avi` | several extensions |
+
+Listing extensions is the way to keep sidecar files such as `Thumbs.db` or
+`desktop.ini` out of the total when you cannot delete them. Matching is case
+sensitive, so add `*.MKV` as another pattern if your files are mixed case. A
+file matching more than one pattern is still only counted once.
 
 ### Including subfolders
 
